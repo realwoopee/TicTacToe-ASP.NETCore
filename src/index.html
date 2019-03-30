@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>TicTacToe via ASP.NET Core &amp; SignalR</title>
+</head>
+<body>
+  <nav class="navbar navbar-expand-sm navbar-dark bg-dark justify-content-end">
+    <a class="navbar-brand" href="#">TicTacToe</a>
+    <form class="form-inline my-2 my-lg-0 ml-auto mr-2">
+      <div class="input-group">
+        <input class="form-control" type="search"
+        placeholder="Get a username" aria-label="Get a username">
+        <div class="input-group-append">
+          <button class="btn btn-secondary my-2 my-sm-0" type="button">
+            <i class="fas fa-check-circle"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </nav>
+  <div class="container mt-5">
+    <div class="row justify-content-around">
+      <div class="col-3 border rounded">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Chat</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Алло</td>
+            </tr>
+            <tr>
+              <td>Хуем по лбу не дало?</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="gameContainer" class="col">
+        <div>
+          <canvas height="300"width="300" class="mx-auto d-block"
+          id="cvGame">
+          </canvas>
+        </div>
+      </div>
+      <div class="col-3 border rounded">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
