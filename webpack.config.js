@@ -4,7 +4,7 @@ const CleanWebpackPlugin = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
-    entry: "./src/index.ts",
+    entry: "./site/index.ts",
     output: {
         path: path.resolve(__dirname, "wwwroot"),
         filename: "[name].[chunkhash].js",
@@ -38,8 +38,8 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(["wwwroot/*"]),
         new HtmlWebpackPlugin({
-            template: "./src/index.html",
-            favicon: "./src/favicon.ico"
+            template: "./site/index.html",
+            favicon: "./site/favicon.ico"
         }),
         new MiniCssExtractPlugin({
             filename: "css/[name].[chunkhash].css"
