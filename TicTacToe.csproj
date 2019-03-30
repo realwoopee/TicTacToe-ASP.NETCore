@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="src\index.ts" />
+    <None Remove="site\index.ts" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="src\css\" />
+    <Folder Include="site\css\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <TypeScriptCompile Include="src\index.ts" />
+    <TypeScriptCompile Include="site\index.ts" />
   </ItemGroup>
 
 </Project>
