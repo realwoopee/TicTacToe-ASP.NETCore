@@ -32,12 +32,7 @@ connection
   .start()
   .catch(err => document.write(err))
   .then(() => drawGrid())
-  .then(() => requestGamestate())
-  .then(() => sendMove(0,0))
-  .then(() => sendMove(1,0))
-  .then(() => sendMove(1,1))
-  .then(() => sendMove(2,2))
-  .then(() => sendMove(2,0));
+  .then(() => requestGamestate());
 
 canv.onmousemove = (event)=>{
   var x = event.pageX - canv.getBoundingClientRect().left,
@@ -60,6 +55,25 @@ canv.onmousemove = (event)=>{
 
 canv.onmouseleave = () => drawBoard();
 
+
+canv.onclick = (event)=>{
+  var x = event.pageX - canv.getBoundingClientRect().left,
+      y = event.pageY - canv.getBoundingClientRect().top;
+  x = Math.floor(x/cellSize);
+  y = Math.floor(y/cellSize);
+
+  sendMove(x,y);
+
+  drawEmtpy(x,y,bgClickColor);
+  if(grid[x][y] == Cell.X)
+  {
+    drawX(x,y);
+  }
+  if(grid[x][y] == Cell.O)
+  {
+    drawO(x,y);
+  }
+};
 
 let grid: Cell[][] = [];
 

@@ -28,12 +28,7 @@ connection
     .start()
     .catch(function (err) { return document.write(err); })
     .then(function () { return drawGrid(); })
-    .then(function () { return requestGamestate(); })
-    .then(function () { return sendMove(0, 0); })
-    .then(function () { return sendMove(1, 0); })
-    .then(function () { return sendMove(1, 1); })
-    .then(function () { return sendMove(2, 2); })
-    .then(function () { return sendMove(2, 0); });
+    .then(function () { return requestGamestate(); });
 canv.onmousemove = function (event) {
     var x = event.pageX - canv.getBoundingClientRect().left, y = event.pageY - canv.getBoundingClientRect().top;
     x = Math.floor(x / cellSize);
@@ -47,8 +42,19 @@ canv.onmousemove = function (event) {
         drawO(x, y);
     }
 };
-canv.onmouseleave = function (event) {
-    drawBoard();
+canv.onmouseleave = function () { return drawBoard(); };
+canv.onclick = function (event) {
+    var x = event.pageX - canv.getBoundingClientRect().left, y = event.pageY - canv.getBoundingClientRect().top;
+    x = Math.floor(x / cellSize);
+    y = Math.floor(y / cellSize);
+    sendMove(x, y);
+    drawEmtpy(x, y, bgClickColor);
+    if (grid[x][y] == Cell.X) {
+        drawX(x, y);
+    }
+    if (grid[x][y] == Cell.O) {
+        drawO(x, y);
+    }
 };
 var grid = [];
 var gridColor = '#000000', xColor = '#000088', oColor = '#880000', bgColor = '#FFFFFF', bgHoverColor = '#f0f0f0', bgClickColor = '#505050', cellSize = 105;
