@@ -27,19 +27,38 @@ var GameState;
 connection
     .start()
     .catch(function (err) { return document.write(err); })
-    .then(function () { return drawGrid(); });
-var gridColor = '#000000';
-var xColor = '#000088';
-var oColor = '#880000';
-var bgColor = '#FFFFFF';
-var cellSize = 105;
+    .then(function () { return drawGrid(); })
+    .then(function () { return requestGamestate(); })
+    .then(function () { return sendMove(0, 0); })
+    .then(function () { return sendMove(1, 0); })
+    .then(function () { return sendMove(1, 1); })
+    .then(function () { return sendMove(2, 2); })
+    .then(function () { return sendMove(2, 0); });
+canv.onmousemove = function (event) {
+    var x = event.pageX - canv.getBoundingClientRect().left, y = event.pageY - canv.getBoundingClientRect().top;
+    x = Math.floor(x / cellSize);
+    y = Math.floor(y / cellSize);
+    drawBoard();
+    drawEmtpy(x, y, bgHoverColor);
+    if (grid[x][y] == Cell.X) {
+        drawX(x, y);
+    }
+    if (grid[x][y] == Cell.O) {
+        drawO(x, y);
+    }
+};
+canv.onmouseleave = function (event) {
+    drawBoard();
+};
+var grid = [];
+var gridColor = '#000000', xColor = '#000088', oColor = '#880000', bgColor = '#FFFFFF', bgHoverColor = '#f0f0f0', bgClickColor = '#505050', cellSize = 105;
 function drawGrid() {
     var ctx = canv.getContext("2d");
     var bar = new Path2D();
-    bar.rect(0, 100, 315, 5);
-    bar.rect(0, 205, 315, 5);
-    bar.rect(100, 0, 5, 315);
-    bar.rect(205, 0, 5, 315);
+    bar.rect(0, 100, 310, 5);
+    bar.rect(0, 205, 310, 5);
+    bar.rect(100, 0, 5, 310);
+    bar.rect(205, 0, 5, 310);
     ctx.fillStyle = gridColor;
     ctx.fill(bar);
 }
@@ -62,26 +81,22 @@ function drawO(xPos, yPos) {
     ctx.stroke(circle);
     ctx.stroke(circle);
 }
-function drawEmtpy(xPos, yPos) {
+function drawEmtpy(xPos, yPos, color) {
     var ctx = canv.getContext("2d");
-    ctx.fillStyle = bgColor;
+    ctx.fillStyle = color;
     ctx.fillRect(xPos * cellSize, yPos * cellSize, 100, 100);
 }
 function onGameRestart() {
     for (var x = 0; x < 3; x++) {
         for (var y = 0; y < 3; y++) {
-            drawEmtpy(x, y);
+            drawEmtpy(x, y, bgColor);
         }
     }
 }
-connection.on("RecieveGameState", function (gameState, grid) {
-    if (gameState == GameState.Preparing) {
-        onGameRestart();
-        return;
-    }
+function drawBoard() {
     for (var x = 0; x < grid.length; x++) {
         for (var y = 0; y < grid[x].length; y++) {
-            drawEmtpy(x, y);
+            drawEmtpy(x, y, bgColor);
             if (grid[x][y] == Cell.X) {
                 drawX(x, y);
             }
@@ -90,7 +105,23 @@ connection.on("RecieveGameState", function (gameState, grid) {
             }
         }
     }
+}
+connection.on("RecieveGameState", function (gameState, cells) {
+    if (gameState == GameState.Preparing) {
+        onGameRestart();
+        return;
+    }
+    grid = cells;
+    drawBoard();
 });
+function sendMove(x, y) {
+    connection.send("DoMove", { X: x, Y: y })
+        .catch(function (err) { return document.write(err); });
+}
+function requestGamestate() {
+    connection.send("GetState")
+        .catch(function (err) { return document.write(err); });
+}
 /*
 connection.on("ReceiveMessage", (username: string, message: string) => {
     let m = document.createElement("div");
@@ -114,9 +145,4 @@ connection.on("RecieveGameState", (gameState: GameState, grid: Cell[][]) => {
 
 btnSend.addEventListener("click", send);
 
-function send() {
-    connection.send("DoMove", { X: tbX.valueAsNumber, Y: tbY.valueAsNumber })
-        .catch(err => document.write(err))
-        .then(() => tbX.value = "")
-        .then(() => tbY.value = "");
-}*/
+*/

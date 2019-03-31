@@ -20,7 +20,7 @@ namespace TicTacToe.Hubs
 
         public async Task GetState(/* отправляет клиенту информацию об игре: её состояние и доп. инфу в зависимости от состояния */)
         {
-
+            await Clients.All.RecieveGameState(_service.GameState, _service.Grid);
         }
 
         public async Task DoMove(Move move)

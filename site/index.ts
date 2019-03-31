@@ -31,23 +31,55 @@ enum GameState {
 connection
   .start()
   .catch(err => document.write(err))
-  .then(() => drawGrid());
+  .then(() => drawGrid())
+  .then(() => requestGamestate())
+  .then(() => sendMove(0,0))
+  .then(() => sendMove(1,0))
+  .then(() => sendMove(1,1))
+  .then(() => sendMove(2,2))
+  .then(() => sendMove(2,0));
 
-const gridColor = '#000000';
-const xColor = '#000088';
-const oColor = '#880000';
-const bgColor = '#FFFFFF';
-const cellSize = 105;
+canv.onmousemove = (event)=>{
+  var x = event.pageX - canv.getBoundingClientRect().left,
+      y = event.pageY - canv.getBoundingClientRect().top;
+  x = Math.floor(x/cellSize);
+  y = Math.floor(y/cellSize);
+
+  drawBoard();
+
+  drawEmtpy(x,y,bgHoverColor);
+  if(grid[x][y] == Cell.X)
+  {
+    drawX(x,y);
+  }
+  if(grid[x][y] == Cell.O)
+  {
+    drawO(x,y);
+  }
+};
+
+canv.onmouseleave = () => drawBoard();
+
+
+let grid: Cell[][] = [];
+
+const gridColor = '#000000',
+ xColor = '#000088',
+ oColor = '#880000',
+ bgColor = '#FFFFFF',
+ bgHoverColor = '#f0f0f0',
+ bgClickColor = '#505050',
+ cellSize = 105;
 
 function drawGrid(){
   let ctx = canv.getContext("2d");
   let bar = new Path2D();
 
-  bar.rect(0,100,315,5);
-  bar.rect(0,205,315,5);
+  bar.rect(0,100,310,5);
+  bar.rect(0,205,310,5);
 
-  bar.rect(100,0,5,315);
-  bar.rect(205,0,5,315);
+  bar.rect(100,0,5,310);
+  bar.rect(205,0,5,310);
 
   ctx.fillStyle = gridColor;
   ctx.fill(bar);
@@ -80,44 +112,59 @@ function drawO(xPos: number, yPos: number){
   ctx.stroke(circle);
 }
 
-function drawEmtpy(xPos: number, yPos: number){
+function drawEmtpy(xPos: number, yPos: number, color: string){
   let ctx = canv.getContext("2d");
 
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = color;
   ctx.fillRect(xPos*cellSize,yPos*cellSize,100,100);
 }
 
 function onGameRestart(){
   for (let x = 0; x < 3; x++) {
       for (let y = 0; y < 3; y++) {
-          drawEmtpy(x,y);
+          drawEmtpy(x,y,bgColor);
       }
   }
 }
 
-connection.on("RecieveGameState", (gameState: GameState, grid: Cell[][]) => {
+function drawBoard(){
+  for(let x = 0; x < grid.length; x++)
+  {
+    for(let y = 0; y < grid[x].length; y++)
+    {
+      drawEmtpy(x,y,bgColor);
+      if(grid[x][y] == Cell.X)
+      {
+        drawX(x,y);
+      }
+      if(grid[x][y] == Cell.O)
+      {
+        drawO(x,y);
+      }
+    }
+  }
+}
+
+connection.on("RecieveGameState", (gameState: GameState, cells: Cell[][]) => {
     if(gameState == GameState.Preparing)
     {
       onGameRestart();
       return;
     }
-    
-    for(let x = 0; x < grid.length; x++)
-    {
-      for(let y = 0; y < grid[x].length; y++)
-      {
-        drawEmtpy(x,y);
-        if(grid[x][y] == Cell.X)
-        {
-          drawX(x,y);
-        }
-        if(grid[x][y] == Cell.O)
-        {
-          drawO(x,y);
-        }
-      }
-    }
+    grid = cells;
+
+    drawBoard();
 });
+
+function sendMove(x,y) {
+    connection.send("DoMove", { X: x, Y: y })
+        .catch(err => document.write(err))
+}
+
+function requestGamestate() {
+    connection.send("GetState")
+        .catch(err => document.write(err))
+}
 
 /*
 connection.on("ReceiveMessage", (username: string, message: string) => {
@@ -142,9 +189,4 @@ connection.on("RecieveGameState", (gameState: GameState, grid: Cell[][]) => {
 
 btnSend.addEventListener("click", send);
 
-function send() {
-    connection.send("DoMove", { X: tbX.valueAsNumber, Y: tbY.valueAsNumber })
-        .catch(err => document.write(err))
-        .then(() => tbX.value = "")
-        .then(() => tbY.value = "");
-}*/
+*/
