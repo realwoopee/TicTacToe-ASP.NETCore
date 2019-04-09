@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TicTacToe.DAL;
 using TicTacToe.Entities;
 
 namespace TicTacToe.Services
@@ -12,9 +13,12 @@ namespace TicTacToe.Services
 
         public Cell[,] Grid { get; set; }
 
+        public UserDao Users { get; set; }
+
         public GameService()
         {
-            GameState = GameState.PlayerXTurn;
+            Users = new UserDao();
+            GameState = GameState.Preparing;
             Grid = new Cell[3, 3];
         }
 
@@ -23,41 +27,163 @@ namespace TicTacToe.Services
             return (GameState, Grid);
         }
 
-        public async Task<(Result, GameState, Cell[,])> RecieveMove(Move move)
+        public void AuthUser(
+            string userId, 
+            string userName, 
+            PlayerStatus status)
         {
-            if(ProcessMove(move) == Result.Successful)
+            switch (status)
             {
-                var gmstate = ProcessGrid();
-
-                if (gmstate == (GameState.XWin | GameState.OWin))
-                {
-                    if (GameState == GameState.PlayerXTurn)
+                case PlayerStatus.PlayerX:
                     {
-                        GameState = GameState.PlayerOTurn;
-                        return (Result.Successful, GameState, Grid);
-                    }
+                        if (Users.PlayerX == null)
+                        {
+                            var user = new User
+                            {
+                                ID = userId,
+                                Name = userName,
+                                Status = PlayerStatus.PlayerX
+                            };
 
-                    if (GameState == GameState.PlayerOTurn)
-                    {
-                        GameState = GameState.PlayerXTurn;
-                        return (Result.Successful, GameState, Grid);
+                            Users.Add(user);
+                        }
+                        else
+                        {
+                            throw new Exception("There is already a PlayerX");
+                        }
+                        break;
                     }
-                }
-                else //Если кто-то выиграл
-                {
-                    GameState = gmstate;
-                    return (Result.Successful, GameState, Grid);
-                }
-                //до этой точки доходить никогда не должно
-                return (Result.Failed, GameState, Grid);
+                case PlayerStatus.PlayerO:
+                    {
+                        if (Users.PlayerO == null)
+                        {
+                            var user = new User
+                            {
+                                ID = userId,
+                                Name = userName,
+                                Status = PlayerStatus.PlayerO
+                            };
+
+                            Users.Add(user);
+                        }
+                        else
+                        {
+                            throw new Exception("There is already a PlayerO");
+                        }
+                        break;
+                    }
+                case PlayerStatus.Spectator:
+                    {
+                        var user = new User
+                        {
+                            ID = userId,
+                            Name = userName,
+                            Status = PlayerStatus.Spectator
+                        };
+
+                        Users.Add(user);
+                        break;
+                    }
             }
-            else
+
+            CheckUsers();
+        }
+
+        public void DeauthUser(string userId)
+        {
+            Users.Delete(userId);
+            CheckUsers();
+        }
+
+        public void Restart(string userId)
+        {
+            if(Users.GetByID(userId)?.Status == PlayerStatus.PlayerX ||
+               Users.GetByID(userId)?.Status == PlayerStatus.PlayerO)
+            if (GameState == GameState.Draw || 
+               GameState == GameState.XWin || 
+               GameState == GameState.OWin)
             {
-                return (Result.Failed, GameState, Grid);
+                    Restart();
             }
         }
 
-        private Result ProcessMove(Move move)
+        private void Restart()
+        {
+            GameState = GameState.Preparing;
+            for (int i = 0; i < Grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < Grid.GetLength(1); j++)
+                {
+                    Grid[i, j] = Cell.Empty;
+                }
+            }
+            CheckUsers();
+        }
+
+        public void RecieveMove(Move move, string userId)
+        {
+            if(Users.GetByID(userId) == null || 
+                Users.GetByID(userId).Status == PlayerStatus.Spectator)
+            {
+                throw new Exception("You are not a player");
+            }
+
+
+            var gmstate = ProcessGrid();
+            if (gmstate == (GameState.XWin | GameState.OWin))
+            {
+                if (Grid[move.X, move.Y] == Cell.Empty)
+                {
+                    switch (GameState)
+                    {
+                        case GameState.PlayerXTurn:
+                            if (Users.GetByID(userId)?.Status == PlayerStatus.PlayerX)
+                            {
+                                ProcessMove(move);
+                                GameState = GameState.PlayerOTurn;
+                                break;
+                            }
+                            else
+                            {
+                                throw new Exception("Invalid move");
+                            }
+                        case GameState.PlayerOTurn:
+                            if (Users.GetByID(userId)?.Status == PlayerStatus.PlayerO)
+                            {
+                                ProcessMove(move);
+                                GameState = GameState.PlayerXTurn;
+                                break;
+                            }
+                            else
+                            {
+                                throw new Exception("Invalid move");
+                            }
+                        default:
+                            throw new Exception("Invalid move");
+                    }
+
+                    gmstate = ProcessGrid();
+                    if(gmstate != (GameState.XWin | GameState.OWin))
+                    {
+                        GameState = gmstate;
+                    }
+                    return;
+                }
+                else //Если кто-то выиграл
+                {
+                    throw new Exception("Invalid move");
+                }
+                //до этой точки доходить никогда не должно
+                throw new Exception("Reached unreachable point");
+            }
+            else
+            {
+                GameState = gmstate;
+                return;
+            }
+        }
+
+        private bool ProcessMove(Move move)
         {
             switch (GameState)
             {
@@ -65,24 +191,24 @@ namespace TicTacToe.Services
                     if (Grid[move.X, move.Y] == Cell.Empty)
                     {
                         Grid[move.X, move.Y] = Cell.X;
-                        return Result.Successful;
+                        return true;
                     }
                     else
                     {
-                        return Result.Failed;
+                        return false;
                     }
                 case GameState.PlayerOTurn:
                     if (Grid[move.X, move.Y] == Cell.Empty)
                     {
                         Grid[move.X, move.Y] = Cell.O;
-                        return Result.Successful;
+                        return true;
                     }
                     else
                     {
-                        return Result.Failed;
+                        return false;
                     }
                 default:
-                    return Result.Failed;
+                    return false;
             }
         }
 
@@ -130,7 +256,34 @@ namespace TicTacToe.Services
                         return GameState.OWin;
                 }
 
+            var emptys = 0;
+            foreach(var i in Grid)
+            {
+                if (i == Cell.Empty)
+                    emptys++;
+            }
+            if(emptys == 0)
+            {
+                return GameState.Draw;
+            }
+
             return GameState.XWin | GameState.OWin;
+        }
+
+        private void CheckUsers()
+        {
+            if (GameState == GameState.Preparing &&
+                Users.PlayerX != null &&
+                Users.PlayerO != null)
+            {
+                GameState = GameState.PlayerXTurn;
+            }
+            else if(Users.PlayerX == null ||
+                Users.PlayerO == null && 
+                (GameState == GameState.PlayerOTurn || GameState == GameState.PlayerXTurn))
+            {
+                GameState = GameState.Draw;
+            }
         }
     }
 }

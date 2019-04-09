@@ -7,7 +7,26 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import * as signalR from "@aspnet/signalr";
 
 const canv: HTMLCanvasElement = document.querySelector("#cvGame");
-const username = new Date().getTime();
+const chatMessageBox: HTMLInputElement =
+  document.querySelector("#chatMessageBox");
+const chatMessageBtn: HTMLButtonElement =
+  document.querySelector("#chatMessageBtn");
+const chatMessages: HTMLDListElement =
+  document.querySelector("#chatMessages");
+
+const authName: HTMLInputElement =
+  document.querySelector("#authName");
+const authState: HTMLSelectElement =
+    document.querySelector("#authState");
+const authBtn: HTMLButtonElement =
+      document.querySelector("#authBtn");
+
+const gameStateText: HTMLHeadingElement =
+  document.querySelector("#gameStateText");
+const btnRestart: HTMLButtonElement =
+  document.querySelector("#btnRestart");
+const playerStatusText: HTMLHeadingElement =
+  document.querySelector("#playerStatusText");
 
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/hub")
@@ -19,13 +38,25 @@ enum Cell {
     O,
 }
 
-enum GameState {
-    Preparing,
-    PlayerXTurn,
-    PlayerOTurn,
-    XWin,
-    OWin,
-    Draw
+const numToGSdict: {[n:number]:string} ={
+  0 : "Preparing",
+  1 : "X's turn",
+  2 : "O's turn",
+  3 : "X won",
+  4 : "O won",
+  5 : "Draw"
+}
+
+const strToState: {[n:string]:number} ={
+  "X" : 1,
+  "O" : 2,
+  "Spectator" : 0
+}
+
+const statusToStr: {[n:number]:string} ={
+  0: "Spectator",
+  1: "Playing as X",
+  2: "Playing as O"
 }
 
 connection
@@ -34,7 +65,23 @@ connection
   .then(() => drawGrid())
   .then(() => requestGamestate());
 
-canv.onmousemove = (event)=>{
+let isPlaying = false;
+
+authBtn.onclick = () => {
+  connection.invoke("Auth", authName.value, strToState[authState.value]);
+};
+
+btnRestart.onclick = () => {
+  connection.invoke("Restart");
+};
+
+chatMessageBtn.onclick = () => sendMessage();
+
+canv.onmousemove = (event)=> {
+  if(!isPlaying){
+    return;
+  }
+
   var x = event.pageX - canv.getBoundingClientRect().left,
       y = event.pageY - canv.getBoundingClientRect().top;
   x = Math.floor(x/cellSize);
@@ -42,7 +89,7 @@ canv.onmousemove = (event)=>{
 
   drawBoard();
 
-  drawEmtpy(x,y,bgHoverColor);
+  drawEmpty(x,y,bgHoverColor);
   if(grid[x][y] == Cell.X)
   {
     drawX(x,y);
@@ -56,7 +103,10 @@ canv.onmousemove = (event)=>{
 canv.onmouseleave = () => drawBoard();
 
 
-canv.onclick = (event)=>{
+canv.onmousedown = (event)=> {
+  if(!isPlaying){
+    return;
+  }
   var x = event.pageX - canv.getBoundingClientRect().left,
       y = event.pageY - canv.getBoundingClientRect().top;
   x = Math.floor(x/cellSize);
@@ -64,7 +114,7 @@ canv.onclick = (event)=>{
 
   sendMove(x,y);
 
-  drawEmtpy(x,y,bgClickColor);
+  drawEmpty(x,y,bgClickColor);
   if(grid[x][y] == Cell.X)
   {
     drawX(x,y);
@@ -126,7 +176,7 @@ function drawO(xPos: number, yPos: number){
   ctx.stroke(circle);
 }
 
-function drawEmtpy(xPos: number, yPos: number, color: string){
+function drawEmpty(xPos: number, yPos: number, color: string){
   let ctx = canv.getContext("2d");
 
   ctx.fillStyle = color;
@@ -136,7 +186,7 @@ function drawEmtpy(xPos: number, yPos: number, color: string){
 function onGameRestart(){
   for (let x = 0; x < 3; x++) {
       for (let y = 0; y < 3; y++) {
-          drawEmtpy(x,y,bgColor);
+          drawEmpty(x,y,bgColor);
       }
   }
 }
@@ -146,7 +196,7 @@ function drawBoard(){
   {
     for(let y = 0; y < grid[x].length; y++)
     {
-      drawEmtpy(x,y,bgColor);
+      drawEmpty(x,y,bgColor);
       if(grid[x][y] == Cell.X)
       {
         drawX(x,y);
@@ -159,48 +209,72 @@ function drawBoard(){
   }
 }
 
-connection.on("RecieveGameState", (gameState: GameState, cells: Cell[][]) => {
-    if(gameState == GameState.Preparing)
+function sendMessage(){
+  //проверка на то, что сообщение пустое
+  if(chatMessageBox.value === null || (/^\s*$/).test(chatMessageBox.value))
+  {
+      return;
+  }
+
+  connection.invoke("SendMessage", chatMessageBox.value)
+      .catch(err => console.error(err))
+      .then(() => chatMessageBox.value = "");
+}
+
+function sendMove(x: number, y: number) {
+    connection.invoke("DoMove", { X: x, Y: y })
+      .catch(err => console.error(err))
+      .then(() => requestGamestate());
+}
+
+function requestGamestate() {
+    connection.invoke("GetState")
+      .catch(err => console.error(err));
+}
+
+connection.on("RecieveGameState", (gameState: number, cells: Cell[][]) => {
+    gameStateText.innerText = numToGSdict[gameState];
+
+    btnRestart.disabled = true;
+
+    if(gameState == 0) //Preparing
     {
       onGameRestart();
-      return;
     }
+
+    if(gameState == 5 || gameState == 3 || gameState == 4)
+    {
+      btnRestart.disabled = false;
+    }
+
     grid = cells;
 
     drawBoard();
 });
 
-function sendMove(x,y) {
-    connection.send("DoMove", { X: x, Y: y })
-        .catch(err => document.write(err))
-}
-
-function requestGamestate() {
-    connection.send("GetState")
-        .catch(err => document.write(err))
-}
-
-/*
 connection.on("ReceiveMessage", (username: string, message: string) => {
-    let m = document.createElement("div");
+  let userName = document.createElement("dt");
+  let messageEl = document.createElement("dd");
 
-    m.innerHTML =
-        `<div class="message-author">${username}</div><div>${message}</div>`;
+  userName.innerText = username;
+  messageEl.innerText = message;
 
-    divMessages.appendChild(m);
-    divMessages.scrollTop = divMessages.scrollHeight;
+  chatMessages.appendChild(userName);
+  chatMessages.appendChild(messageEl);
+  chatMessages.parentElement.scrollTop = chatMessages.parentElement.scrollHeight;
 });
 
-connection.on("RecieveGameState", (gameState: GameState, grid: Cell[][]) => {
-    let m = document.createElement("div");
 
-    m.innerHTML =
-        `<div class="message-author">${username}</div><div>${GameState[gameState]} + ${grid.map((v: Cell[], index: number, array: Cell[][]) => v.map((c: Cell, index: number, array: Cell[]) => c == Cell.Empty ? " " : Cell[c]))}</div>`;
-
-    divMessages.appendChild(m);
-    divMessages.scrollTop = divMessages.scrollHeight;
+connection.on("ReceieveAuthRequest", (message: string) => {
+  isPlaying = false;
+  authBtn.disabled = false;
+  chatMessageBtn.disabled = true;
+  playerStatusText.innerText = "You aren't authorized";
 });
 
-btnSend.addEventListener("click", send);
-
-*/
+connection.on("RecievePlayerStatus", (playerstatus: number) => {
+  isPlaying = true;
+  chatMessageBtn.disabled = false;
+  authBtn.disabled = true;
+  playerStatusText.innerText = "You are " + statusToStr[playerstatus];
+});

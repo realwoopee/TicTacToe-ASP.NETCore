@@ -5,38 +5,41 @@
   <title>TicTacToe via ASP.NET Core &amp; SignalR</title>
 </head>
 <body>
-  <nav class="navbar navbar-expand-sm navbar-dark bg-dark justify-content-end">
+  <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
     <a class="navbar-brand" href="#">TicTacToe</a>
-    <form class="form-inline my-2 my-lg-0 ml-auto mr-2">
-      <div class="input-group">
-        <input class="form-control" type="search"
-        placeholder="Get a username" aria-label="Get a username">
-        <div class="input-group-append">
-          <button class="btn btn-secondary my-2 my-sm-0" type="button">
-            <i class="fas fa-check-circle"></i>
-          </button>
-        </div>
-      </div>
-    </form>
+    <div class="my-2 ml-auto">
+      <div class="form-inline">
+      <input class="form-control mr-2" type="text" placeholder="Username" id="authName">
+      <select id="authState">
+        <option>X</option>
+        <option>O</option>
+        <option>Spectator</option>
+      </select>
+      <button class="btn btn-info my-2 ml-2" id="authBtn">
+        <i class="fas fa-sign-in-alt"></i>
+      </button>
+    </div>
+    </div>
   </nav>
   <div class="container mt-5">
     <div class="row justify-content-around">
-      <div class="col-3 border rounded">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Chat</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Алло</td>
-            </tr>
-            <tr>
-              <td>Да, я, да</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="col-3 card border rounded" style="padding: 0 !important; height: 310px !important;">
+        <div class="card-body h-100"
+        style="overflow-y: scroll !important; padding-bottom: 0px!important;">
+          <dl id="chatMessages">
+          </dl>
+        </div>
+        <div class="card-body" style="padding-top: 0px!important;">
+          <div class="input-group">
+            <input class="form-control" id="chatMessageBox" type="text"
+            placeholder="Send" aria-label="Send">
+            <div class="input-group-append">
+              <button id="chatMessageBtn" class="btn btn-info" type="button" disabled="true">
+                <i class="fas fa-comment"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="gameContainer" class="col">
         <div>
@@ -44,8 +47,15 @@
           </canvas>
         </div>
       </div>
-      <div class="col-3 border rounded">
-      </div>
+      <div class="card col-3 border rounded" style="padding: 0 !important;">
+        <h5 id="gameStateText" class="card-header text-center"></h5>
+        <div class="card-body d-flex flex-column">
+          <h5 id="playerStatusText" style="text-align: center;">You aren't authorized</h5>
+          <button class="btn btn-outline-warning" id="btnRestart" disabled="true">
+            Restart
+          </button>
+        </div>
+        </div>
     </div>
   </div>
 </body>
