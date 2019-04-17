@@ -48,11 +48,7 @@ connection
     .then(function () { return requestGamestate(); });
 var isPlaying = false;
 authBtn.onclick = function () {
-    connection.invoke("Auth", authName.value, strToState[authState.value])
-        .then(function () {
-        chatMessageBtn.disabled = false;
-        authBtn.disabled = true;
-    });
+    connection.invoke("Auth", authName.value, strToState[authState.value]);
 };
 btnRestart.onclick = function () {
     connection.invoke("Restart");
@@ -171,11 +167,9 @@ connection.on("RecieveGameState", function (gameState, cells) {
     if (gameState == 0) //Preparing
      {
         onGameRestart();
-        return;
     }
     if (gameState == 5 || gameState == 3 || gameState == 4) {
         btnRestart.disabled = false;
-        return;
     }
     grid = cells;
     drawBoard();
@@ -191,9 +185,13 @@ connection.on("ReceiveMessage", function (username, message) {
 });
 connection.on("ReceieveAuthRequest", function (message) {
     isPlaying = false;
+    authBtn.disabled = false;
+    chatMessageBtn.disabled = true;
     playerStatusText.innerText = "You aren't authorized";
 });
 connection.on("RecievePlayerStatus", function (playerstatus) {
     isPlaying = true;
+    chatMessageBtn.disabled = false;
+    authBtn.disabled = true;
     playerStatusText.innerText = "You are " + statusToStr[playerstatus];
 });
