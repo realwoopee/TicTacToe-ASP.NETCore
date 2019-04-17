@@ -10,5 +10,6 @@ namespace TicTacToe.Entities
         Task RecieveGameState(GameState gameState, Cell[,] grid);
         Task RecievePlayerStatus(PlayerStatus status);
         Task ReceiveMessage(string user, string message);
+        Task ReceieveAuthRequest(string message);
     }
 }

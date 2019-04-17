@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace TicTacToe.Entities
 {
-    public enum Result
+    public class User
     {
-        Successful,
-        Failed,
-        Exception
+        public string ID;
+        public string Name;
+        public PlayerStatus Status;
     }
 }
