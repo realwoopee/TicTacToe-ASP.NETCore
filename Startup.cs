@@ -35,6 +35,8 @@ namespace TicTacToe
             app.UseDefaultFiles();
             app.UseStaticFiles();
 
+            //app.UseHttpsRedirection();
+
             app.UseSignalR(options =>
             {
                 options.MapHub<GameHub>("/hub");

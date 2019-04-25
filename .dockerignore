@@ -1,5 +1,6 @@
 bin\
 obj\
 .git\
+.gitignore
 node_modules\
 .vs\
